@@ -1,0 +1,9 @@
+---
+applications:
+- name: go-pingpong
+  memory: 128M
+  instances: 1
+  buildpacks:
+    - go_buildpack
+  path: .
+  command: go-pingpong <your app url>
