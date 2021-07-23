@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptrace"
 	"os"
 	"time"
 )
@@ -36,11 +37,22 @@ func main() {
 	}()
 
 	endpoint := fmt.Sprintf("%s/ping", url)
+	client := &http.Client{}
 
+	trace := &httptrace.ClientTrace{
+		GotConn: func(connInfo httptrace.GotConnInfo) {
+			fmt.Printf("-> %s (reused: %v, wasIdle: %v, idleTime: %v)\n", connInfo.Conn.RemoteAddr(), connInfo.Reused, connInfo.WasIdle, connInfo.IdleTime)
+		},
+	}
 	for {
 		fmt.Printf("-> %s\n", endpoint)
 		start := time.Now()
-		r, err := http.Get(endpoint)
+		req, err := http.NewRequest("GET", endpoint, nil)
+		req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
+		if err != nil {
+			panic(err)
+		}
+		r, err := client.Do(req)
 		stop := time.Now()
 		duration := stop.Sub(start)
 		if err != nil {
